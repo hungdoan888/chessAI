@@ -36,7 +36,8 @@ def getArgs():
     # Sleep Time
     parser.add_argument('--numGames',
                         type=int,
-                        help='Number of games to play',
+                        help='Number of games to play', 
+                        
                         default=100)
     
     # Sleep Time
@@ -222,25 +223,28 @@ def playChess(driver, pathDict, onlineOrComp = 'computer'):
 
 # Searching for game
 def searchingForGame(driver, pathDict, onlineOrComp):
+    secondsSearchingForGame = 0
     while True:
         time.sleep(1)
         print('Searching for game...')
+        secondsSearchingForGame  += 1
+        
+        if secondsSearchingForGame > 30:
+            # New Game
+            newGame(driver, args)
+            searchingForGame(driver, pathDict, onlineOrComp)
+            break
         
         # If clock exists, game has started
         if xpathExists(driver, pathDict['online']['myClock']):
             break
-        
-        # Check to see if clock has started
-        # if (':00' not in driver.find_element('xpath', pathDict['online']['myClock']).text or 
-        #     ':00' not in driver.find_element('xpath', pathDict['online']['oppClock']).text):
-        #     break
    
 # Determine if we are white or black
 def colorIsWhite(driver, pathDict, onlineOrComp):
     # Wait for clocks to start
     if onlineOrComp == 'online':
         while True:
-            time.sleep(1)
+            time.sleep(2)
             if (':00' not in driver.find_element('xpath', pathDict[onlineOrComp]['myClock']).text or 
                 ':00' not in driver.find_element('xpath', pathDict[onlineOrComp]['oppClock']).text):
                 break
@@ -271,9 +275,9 @@ def xpathExists(driver, xpath):
         
 #%% Resign Game
 
-def resignGame(driver, xpath, pathDict, onlineOrComp):
-    # En passant
-    if xpathExists(driver, '{}/div'.format(xpath)):
+def resignGame(driver, xpath, pathDict, onlineOrComp, position):
+    # En passant or they promote
+    if xpathExists(driver, '{}/div'.format(xpath)) or '=' in position:
         chooseButton = driver.find_element('xpath',
                                            pathDict[onlineOrComp]['resign'])
         chooseButton.click()
@@ -331,7 +335,7 @@ def playAsWhite(driver, pathDict, onlineOrComp):
             break
         
         # En passant
-        if resignGame(driver, xpath, pathDict, onlineOrComp):
+        if resignGame(driver, xpath, pathDict, onlineOrComp, position):
             break
             
         # Convert position to black
@@ -423,8 +427,8 @@ def playAsBlack(driver, pathDict, onlineOrComp):
         if '#' in position:
             break
         
-        # En passant
-        if resignGame(driver, xpath, pathDict, onlineOrComp):
+        # En passant or if they get a promoted pawn
+        if resignGame(driver, xpath, pathDict, onlineOrComp, position):
             break
         
         # New move
