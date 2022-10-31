@@ -17,6 +17,8 @@ Chess AI that can play on chess.com
 # How to run
 - Pip install the requirements.txt file
   - pip install -r requirements.txt
+- Add config.ini to credentials folder with your chess.com credentials
+  - Use template but rename to config.ini
 - Play against the computer on chess.com
   - main.py --onlineOrComp computer --numGames 2 --sleepTime 2
   
