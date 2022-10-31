@@ -8,11 +8,11 @@ Created on Sat Oct 29 09:31:40 2022
 #%% Imports
 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException 
 from selenium.webdriver.common.keys import Keys
 import pyautogui
 import configparser
 import argparse
+
 import time
 from copy import deepcopy
 
@@ -31,14 +31,14 @@ def getArgs():
     parser.add_argument('--sleepTime',
                         type=int,
                         help='Time between click events',
-                        default=2)
+                        default=3)
     
     # Sleep Time
     parser.add_argument('--numGames',
                         type=int,
                         help='Number of games to play', 
                         
-                        default=100)
+                        default=1000)
     
     # Sleep Time
     parser.add_argument('--onlineOrComp',
@@ -168,9 +168,10 @@ def playOnline(driver):
     
     # play button
     time.sleep(args.sleepTime)
-    playButton = driver.find_element('xpath',
-                              '//*[@id="board-layout-sidebar"]/div/div[2]/div/div[1]/div[1]/button')
-    playButton.click()
+    if xpathExists(driver, '//*[@id="board-layout-sidebar"]/div/div[2]/div/div[1]/div[1]/button'):
+        playButton = driver.find_element('xpath',
+                            '//*[@id="board-layout-sidebar"]/div/div[2]/div/div[1]/div[1]/button')
+        playButton.click()
 
 #%% Create path dictionary
 
@@ -214,7 +215,8 @@ def getPathDict():
 def playChess(driver, pathDict, onlineOrComp = 'computer'):
     # Wait for game to start
     if onlineOrComp == 'online':
-        searchingForGame(driver, pathDict, onlineOrComp)
+        if not foundGame(driver, pathDict, onlineOrComp):
+            return
          
     if colorIsWhite(driver, pathDict, onlineOrComp):
         playAsWhite(driver, pathDict, onlineOrComp)
@@ -222,22 +224,20 @@ def playChess(driver, pathDict, onlineOrComp = 'computer'):
         playAsBlack(driver, pathDict, onlineOrComp)
 
 # Searching for game
-def searchingForGame(driver, pathDict, onlineOrComp):
-    secondsSearchingForGame = 0
+def foundGame(driver, pathDict, onlineOrComp):
+    maxSecondsToSearch = 0
     while True:
         time.sleep(1)
         print('Searching for game...')
-        secondsSearchingForGame  += 1
+        maxSecondsToSearch += 1
         
-        if secondsSearchingForGame > 30:
-            # New Game
-            newGame(driver, args)
-            searchingForGame(driver, pathDict, onlineOrComp)
-            break
-        
+        # Over limit
+        if maxSecondsToSearch > 30:
+            return False
+
         # If clock exists, game has started
         if xpathExists(driver, pathDict['online']['myClock']):
-            break
+            return True
    
 # Determine if we are white or black
 def colorIsWhite(driver, pathDict, onlineOrComp):
@@ -269,7 +269,7 @@ def isGG(driver, pathDict, onlineOrComp):
 def xpathExists(driver, xpath):
     try:
         driver.find_element('xpath', xpath)
-    except NoSuchElementException:
+    except:
         return False
     return True
         
@@ -560,12 +560,12 @@ def getPrevXYCoord(boardPrev, xpos, ypos, piece, prevFile, prevRank,
                 continue
             
             # Check for correct file
-            if prevFile is not None and prevFile_xpos != file:
-                continue
+            # if prevFile is not None and prevFile_xpos != file:
+            #     continue
             
             # Check for correct rank
-            if prevRank is not None and prevRank_ypos != rank:
-                continue
+            # if prevRank is not None and prevRank_ypos != rank:
+            #     continue
             
             # Get possible moves
             possibleMoves = boardPrev.chesspieces[file][rank].get_possible_moves(boardPrev)
@@ -630,6 +630,7 @@ def transformAIMove(ai_xfrom, ai_yfrom, ai_xto, ai_yto):
 def playMultipleGames(driver, pathDict, args):
     for i in range(args.numGames):
         # New Game
+        print('Game Number: {}'.format(i+1))
         newGame(driver, args)
         
         # Make moves
